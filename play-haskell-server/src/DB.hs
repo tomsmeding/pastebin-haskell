@@ -77,7 +77,6 @@ schemaVersion :: Int
       \    parent INTEGER REFERENCES pastes (id) ON DELETE SET NULL,\n\
       \    UNIQUE (key)\n\
       \)"
-     ,"CREATE UNIQUE INDEX pastes_key ON pastes (key)"
      ,"CREATE TABLE files (\n\
       \    paste INTEGER NOT NULL, \n\
       \    fname BLOB NULL, \n\
