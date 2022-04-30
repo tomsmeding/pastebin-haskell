@@ -7,13 +7,14 @@ module SpamDetect (
 ) where
 
 import Control.Concurrent (forkIO, threadDelay)
-import Control.Monad (forever, void)
+import Control.Monad (forever, void, when)
 import Control.Concurrent.STM
 import qualified Data.Map.Strict as Map
 import Data.Map.Strict (Map)
 import Data.Maybe (fromMaybe)
 import Data.Int
 import qualified System.Clock as Clock
+import System.IO (hPutStrLn, stderr)
 import System.Random (randomRIO)
 
 
@@ -82,12 +83,16 @@ initSpamDetect = do
 recordCheckSpam :: Ord a => Action -> SpamDetect a -> a -> IO Bool
 recordCheckSpam (actionPenalty -> penalty) (SpamDetect var) user = do
     now <- getTimeSecsMonotonic
-    atomically $ do
+    (isspam, mapsize) <- atomically $ do
         mp <- readTVar var
         let (sc1, tm1) = fromMaybe (0, now) (Map.lookup user mp)
             sc2 = progressTime tm1 now sc1
-        writeTVar var (Map.insert user (sc2 + penalty, now) mp)
-        return (sc2 + penalty >= spamThreshold)
+        let mp' = Map.insert user (sc2 + penalty, now) mp
+        writeTVar var mp'
+        return (sc2 + penalty >= spamThreshold, Map.size mp')
+    when (mapsize >= 10000 && mapsize `mod` 5000 == 0) $
+        hPutStrLn stderr $ "spam map size: " ++ show mapsize
+    return isspam
 
 progressTime :: Int64 -> Int64 -> Float -> Float
 progressTime tm1 tm2 sc1 =

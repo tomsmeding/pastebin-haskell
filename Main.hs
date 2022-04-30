@@ -1,3 +1,4 @@
+{-# LANGUAGE ForeignFunctionInterface #-}
 module Main (main) where
 
 import Control.Concurrent.STM
@@ -16,6 +17,8 @@ import Snap.Http.Server
 import System.IO
 import qualified System.Posix.Signals as Signal
 
+import Foreign.C.Types (CBool(..))
+
 import qualified Options as Opt
 import Paste
 import Paste.DB (withDatabase)
@@ -24,6 +27,9 @@ import Play
 import ServerModule
 import Shim
 import SpamDetect
+
+
+foreign import ccall "set_gchook" c_set_gchook :: IO CBool
 
 
 data InstantiatedModule = InstantiatedModule
@@ -99,6 +105,9 @@ config =
 
 main :: IO ()
 main = do
+    c_set_gchook >>= \ok -> if ok == 1 then return ()
+                                       else putStrLn "WARNING: GC logging not enabled!"
+
     options <- Opt.parseOptions $ Opt.Interface defaultOptions $ Map.fromList
         [("--proxied", Opt.Flag "Assumes the server is running behind a proxy that sets \
                                 \X-Forwarded-For, instead of using the source IP of a \
