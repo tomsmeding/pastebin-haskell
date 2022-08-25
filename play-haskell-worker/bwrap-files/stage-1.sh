@@ -35,27 +35,8 @@ mkfifo "${tmpdir}/ghc-out"
 ( cat <"${tmpdir}/ghc-out" >&"$ghc_out_fd" ) &
 ghc_out_catpid=$!
 
-args=(
-  --user
-  --description='play-haskell-worker cpuquota'
-  --pipe
-  --wait
-  --collect
-  --same-dir
-  --service-type=exec
-  --setenv=PATH="$PATH"
-  --quiet
-  --property=CPUQuota=100%
-  # Limit memory to 600 MiB. Note that the compiled program gets a 500 MiB memory
-  # limit via the GHC RTS, so this limit is 1. to constrain GHC itself (including
-  # any TH code), and 2. as a second-layer defense.
-  --property=MemoryMax=600M
-  --property=TasksMax=50
-  --property=LimitCORE=0
-)
-
 echo >&2 "[s1] Entering systemd-run"
 
-systemd-run "${args[@]}" -- ./stage-2.sh "${tmpdir}/ghc-out"
+./systemd-run-shim ./stage-2.sh "${tmpdir}/ghc-out"
 
 echo >&2 "[s1] systemd-run done"
