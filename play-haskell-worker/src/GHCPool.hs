@@ -111,8 +111,11 @@ makeWorker = do
     let spec = (Pr.proc (workdir </> "bwrap-files/stage-1.sh") [show ghcOutWriteFD])
                   { Pr.std_in = Pr.CreatePipe
                   , Pr.std_out = Pr.CreatePipe
-                  , Pr.std_err = Pr.CreatePipe }
-    withCreateProcessRetry spec $ \(Just inh) (Just outh) (Just errh) proch -> do
+                  -- , Pr.std_err = Pr.CreatePipe }
+                  , Pr.std_err = Pr.Inherit }
+    -- withCreateProcessRetry spec $ \(Just inh) (Just outh) (Just errh) proch -> do
+    withCreateProcessRetry spec $ \(Just inh) (Just outh) Nothing proch -> do
+      -- threadDelay 1000000
       -- debug $ "Created new stage-1 process: inh=" ++ show inh ++ " outh=" ++ show outh ++ " errh=" ++ show errh ++ " ghcoutread=" ++ show ghcOutReadHandle
       -- Make sure our copy of the writing end of the pipe is closed, so that the pipe gets closed when the process is done
       closeFd ghcOutWriteFD
@@ -125,8 +128,8 @@ makeWorker = do
       readTh1 <- forkIO $ hGetContentsUTF8Bounded maxOutputSizeBytes ghcOutReadHandle >>= putMVar ghcoutmvar
       stdoutmvar <- newEmptyMVar
       readTh2 <- forkIO $ hGetContentsUTF8Bounded maxOutputSizeBytes outh >>= putMVar stdoutmvar
-      stderrmvar <- newEmptyMVar
-      readTh3 <- forkIO $ hGetContentsUTF8Bounded maxOutputSizeBytes errh >>= putMVar stderrmvar
+      -- stderrmvar <- newEmptyMVar
+      -- readTh3 <- forkIO $ hGetContentsUTF8Bounded maxOutputSizeBytes errh >>= putMVar stderrmvar
       -- debug $ "[pool] Waiting for process"
       (dur, mec) <- duration $ timeout runTimeoutMicrosecs $ Pr.waitForProcess proch
       -- debug $ "[pool] done with " ++ show (dur, mec)
@@ -137,11 +140,13 @@ makeWorker = do
           -- debug $ "[pool] ghc out done len=" ++ show (Lazy.length ghcout)
           out <- readMVar stdoutmvar
           -- debug $ "[pool] out done len=" ++ show (Lazy.length out)
-          err <- readMVar stderrmvar
+          -- err <- readMVar stderrmvar
           -- debug $ "[pool] err done len=" ++ show (Lazy.length err)
-          putMVar resultvar (Right (Result ec ghcout out err dur))
+          -- putMVar resultvar (Right (Result ec ghcout out err dur))
+          putMVar resultvar (Right (Result ec ghcout out mempty dur))
         Nothing -> do
-          mapM_ killThread [readTh1, readTh2, readTh3]
+          -- mapM_ killThread [readTh1, readTh2, readTh3]
+          mapM_ killThread [readTh1, readTh2]
           -- Paranoid termination is technically unnecessary since bwrap seems
           -- to kill its child with SIGKILL if it is itself killed using
           -- SIGTERM, which is what Pr.terminateProcess sends. However, let's

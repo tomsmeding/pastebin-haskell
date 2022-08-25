@@ -132,6 +132,8 @@ trim = dropWhile isSpace . reverse . dropWhile isSpace . reverse
 
 main :: IO ()
 main = do
+  hSetBuffering stdout LineBuffering
+
   options <- Opt.parseOptions $ Opt.Interface defaultOptions $ Map.fromList
     [("--proxied", Opt.Flag
         "Assumes the server is running behind a proxy that sets \

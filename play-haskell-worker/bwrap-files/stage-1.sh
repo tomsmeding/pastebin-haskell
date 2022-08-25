@@ -1,6 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
+echo >&2 "[s1] In stage-1"
+
 cd "$(dirname "$0")"
 
 # Read ghc output FD from command-line arguments
@@ -24,6 +26,7 @@ done
 eval "$close_cmdline"
 
 tmpdir=$(mktemp -d)
+echo >&2 "tmpdir = $tmpdir"
 
 trap "rm -r '$tmpdir'" EXIT
 
@@ -51,4 +54,8 @@ args=(
   --property=LimitCORE=0
 )
 
+echo >&2 "[s1] Entering systemd-run"
+
 systemd-run "${args[@]}" -- ./stage-2.sh "${tmpdir}/ghc-out"
+
+echo >&2 "[s1] systemd-run done"

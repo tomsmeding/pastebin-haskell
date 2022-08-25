@@ -1,6 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
+echo >&2 "[s2] In stage 2"
+
 # Read ghc output FD from command-line arguments
 if [[ $# -ne 1 ]]; then
   echo >&2 "Usage: $0 <ghc_out_fifo>"
@@ -43,8 +45,12 @@ args=(
 
 [[ -x ./bwrap ]] && BWRAP=./bwrap || BWRAP=bwrap
 
+echo >&2 "[s2] Redirecting ghc out fd"
+
 # Need to do this under eval because otherwise the fd-redirect syntax is not
 # recognised.
 eval exec "$ghc_out_fd"'>"$ghc_out_fifo"'
+
+echo >&2 "[s2] Entering bwrap"
 
 exec $BWRAP "${args[@]}" 4<stage-3.sh
