@@ -4,18 +4,6 @@ cradle:
       config:
         cradle:
           cabal:
-    - path: "./play-haskell-types"
-      config:
-        cradle:
-          cabal:
-    - path: "./play-haskell-worker"
-      config:
-        cradle:
-          cabal:
-    - path: "./play-haskell-server"
-      config:
-        cradle:
-          cabal:
     - path: "./pastebin-haskell"
       config:
         cradle:
