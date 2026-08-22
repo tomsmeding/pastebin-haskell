@@ -40,7 +40,7 @@ chooseNames reservedPrefixLen =
     concatMap numberGroup
     . groupBy ((==) `on` fst)
     . sortBy (comparing fst)
-    . map (first (BS.take maxNameLen . filterName))
+    . map (first (BS.take maxNameLen . filterName . filterComponents))
   where
     numberGroup :: [(ByteString, a)] -> [(ByteString, a)]
     numberGroup [file] = [file]
@@ -64,9 +64,19 @@ chooseNames reservedPrefixLen =
     filterName name =
         let name' = BS.filter (\c -> 32 <= c && c < 127 &&
                                         (let ch = chr (fromIntegral c)
-                                         in isAlphaNum ch || ch `elem` "-_."))
+                                         in isAlphaNum ch || ch `elem` "-_./"))
                               name
         in if BS.null name' then Char8.pack "file.hs" else name'
+
+    filterComponents :: ByteString -> ByteString
+    filterComponents = BS.intercalate (BS.pack [slash]) . filter isOK . BS.split slash
+      where
+        slash = fromIntegral (ord '/')
+        isOK comp
+          | BS.null comp = False  -- remove leading/trailing '/' and collapse repeated '/'
+          | comp == Char8.pack ".." = False
+          | comp == Char8.pack "." = False
+          | otherwise = True
 
 -- This is a limitation of the POSIX USTAR format as supported by tar-bytestring.
 maxNameLen :: Int
