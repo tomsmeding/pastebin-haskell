@@ -7,7 +7,7 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as BS8
 import Data.Char (isSpace)
 import Data.List (intercalate)
-import Text.Parsec
+import Text.Parsec hiding (string')
 
 
 processHighlightCSS :: IO ByteString
